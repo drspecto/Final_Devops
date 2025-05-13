@@ -26,4 +26,4 @@ jobs:
 
     - name: Run Ansible Playbook
       run: |
-        ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
+        ansible-playbook -i .github/workflows/inventory.ini playbook.yml
