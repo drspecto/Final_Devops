@@ -4,15 +4,15 @@
   become: yes
 
   tasks:
-    - name: Install Node.js and git
-      apt:
+    - name: Install Node.js and git (for Amazon Linux / RedHat)
+      yum:
         name: "{{ item }}"
         state: present
       loop:
         - nodejs
         - npm
         - git
-      when: ansible_os_family == "Debian"
+      when: ansible_os_family == "RedHat"
 
     - name: Clone your React app
       git:
@@ -25,8 +25,7 @@
       args:
         chdir: /home/ec2-user/app
 
-    - name: Start the app
-      shell: npm start &
+    - name: Start the app in background
+      shell: nohup npm start > /dev/null 2>&1 &
       args:
         chdir: /home/ec2-user/app
-  
