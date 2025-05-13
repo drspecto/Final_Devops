@@ -2,37 +2,31 @@
 - name: Deploy React app on EC2
   hosts: all
   become: yes
-  become_user: ec2-user
+  become_user: ubuntu  # Changed from ec2-user to ubuntu
 
   tasks:
-    - name: Install EPEL repository (for Amazon Linux)
-      yum:
-        name: epel-release
-        state: present
-      when: ansible_os_family == "RedHat"
-
-    - name: Install Node.js, npm, and git
-      yum:
+    - name: Install Node.js and npm (Ubuntu)
+      apt:
         name: "{{ item }}"
         state: present
+        update_cache: yes
       loop:
         - nodejs
         - npm
         - git
-      when: ansible_os_family == "RedHat"
 
     - name: Clone your React app
       git:
         repo: 'https://github.com/deshraj-techhub/aws-devops-handson.git'
-        dest: /home/ec2-user/app
+        dest: /home/ubuntu/app
         force: yes
 
     - name: Install dependencies
       shell: npm install
       args:
-        chdir: /home/ec2-user/app
+        chdir: /home/ubuntu/app
 
     - name: Start the app in background
       shell: nohup npm start > /dev/null 2>&1 &
       args:
-        chdir: /home/ec2-user/app
+        chdir: /home/ubuntu/app
