@@ -5,7 +5,8 @@
   become_method: sudo
 
   tasks:
-    - name: Remove existing Node.js installations (clean slate)
+    # 1. Clean up any existing Node.js installations
+    - name: Remove existing Node.js installations
       apt:
         name: "{{ item }}"
         state: absent
@@ -15,6 +16,7 @@
         - npm
       ignore_errors: yes
 
+    # 2. Install required system packages
     - name: Install prerequisites
       apt:
         name: "{{ item }}"
@@ -24,47 +26,60 @@
         - curl
         - git
         - ca-certificates
+        - build-essential
 
-    - name: Add Nodesource repository (for Node.js 18.x)
-      shell: |
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    # 3. Download and run Nodesource setup script (fixed version)
+    - name: Download Nodesource setup script
+      get_url:
+        url: https://deb.nodesource.com/setup_18.x
+        dest: /tmp/nodesource_setup.sh
+        mode: '0755'
+
+    - name: Run Nodesource setup script
+      command: /tmp/nodesource_setup.sh
       args:
-        warn: no  # This suppresses warnings about piped commands
+        creates: /etc/apt/sources.list.d/nodesource.list
 
-    - name: Install Node.js and npm (from Nodesource)
+    # 4. Install Node.js and npm
+    - name: Install Node.js and npm
       apt:
         name: nodejs
         state: present
         update_cache: yes
 
-    - name: Verify Node.js and npm versions
+    # 5. Verify installation
+    - name: Verify Node.js and npm installation
       shell: |
         node --version
         npm --version
       register: node_versions
       changed_when: false
 
-    - name: Display Node.js and npm versions
+    - name: Display versions
       debug:
-        msg: "Node.js {{ node_versions.stdout_lines[0] }}, npm {{ node_versions.stdout_lines[1] }}"
+        msg: "Installed Node.js {{ node_versions.stdout_lines[0] }}, npm {{ node_versions.stdout_lines[1] }}"
 
+    # 6. Deploy your application
     - name: Clone your React app
       git:
         repo: 'https://github.com/deshraj-techhub/aws-devops-handson.git'
         dest: /home/ubuntu/app
         force: yes
 
-    - name: Install dependencies
+    - name: Install app dependencies
       npm:
         path: /home/ubuntu/app
         state: present
 
-    - name: Install PM2 process manager globally
+    - name: Install PM2 process manager
       npm:
         name: pm2
         global: yes
 
-    - name: Start the app with PM2
-      shell: pm2 start npm --name "react-app" -- start
+    - name: Start application with PM2
+      command: pm2 start npm --name "react-app" -- start
       args:
         chdir: /home/ubuntu/app
+
+    - name: Save PM2 process list
+      command: pm2 save
