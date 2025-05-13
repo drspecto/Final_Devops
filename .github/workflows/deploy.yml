@@ -14,18 +14,16 @@ jobs:
 
     - name: Set up SSH key
       run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
-        chmod 600 private_key.pem
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_IP }} >> ~/.ssh/known_hosts
 
-    - name: Run Ansible Playbook
+    - name: Install Ansible
       run: |
         sudo apt-get update
         sudo apt-get install -y ansible
 
-        echo "[web]" > inventory
-        echo "${{ secrets.EC2_IP }}" >> inventory
-
-        echo "[defaults]" > ansible.cfg
-        echo "host_key_checking = False" >> ansible.cfg
-
-        ansible-playbook -i inventory playbook.yml --private-key private_key.pem -u ec2-user
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i ansible/inventory.ini ansible/deploy.yml

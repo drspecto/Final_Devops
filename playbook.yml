@@ -2,9 +2,16 @@
 - name: Deploy React app on EC2
   hosts: all
   become: yes
+  become_user: ec2-user
 
   tasks:
-    - name: Install Node.js and git (for Amazon Linux / RedHat)
+    - name: Install EPEL repository (for Amazon Linux)
+      yum:
+        name: epel-release
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Install Node.js, npm, and git
       yum:
         name: "{{ item }}"
         state: present
