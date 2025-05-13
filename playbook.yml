@@ -2,14 +2,18 @@
 - name: Deploy React app on EC2
   hosts: all
   become: yes
-  become_user: ubuntu  # Changed from ec2-user to ubuntu
+  become_method: sudo
+  become_user: root
 
   tasks:
-    - name: Install Node.js and npm (Ubuntu)
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Node.js, npm and git
       apt:
         name: "{{ item }}"
         state: present
-        update_cache: yes
       loop:
         - nodejs
         - npm
