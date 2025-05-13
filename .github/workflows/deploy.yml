@@ -24,7 +24,9 @@ jobs:
 
     - name: Create or append to ansible.cfg
       run: |
-        echo "[defaults]" >> ansible.cfg
+        if ! grep -q "\[defaults\]" ansible.cfg; then
+          echo "[defaults]" >> ansible.cfg
+        fi
         echo "host_key_checking = False" >> ansible.cfg
 
     - name: Generate Inventory file
