@@ -3,21 +3,50 @@
   hosts: all
   become: yes
   become_method: sudo
-  become_user: root
 
   tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-
-    - name: Install Node.js, npm and git
+    - name: Remove existing Node.js installations (clean slate)
       apt:
         name: "{{ item }}"
-        state: present
+        state: absent
+        purge: yes
       loop:
         - nodejs
         - npm
+      ignore_errors: yes
+
+    - name: Install prerequisites
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - curl
         - git
+        - ca-certificates
+
+    - name: Add Nodesource repository (for Node.js 18.x)
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+      args:
+        warn: no  # This suppresses warnings about piped commands
+
+    - name: Install Node.js and npm (from Nodesource)
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+
+    - name: Verify Node.js and npm versions
+      shell: |
+        node --version
+        npm --version
+      register: node_versions
+      changed_when: false
+
+    - name: Display Node.js and npm versions
+      debug:
+        msg: "Node.js {{ node_versions.stdout_lines[0] }}, npm {{ node_versions.stdout_lines[1] }}"
 
     - name: Clone your React app
       git:
@@ -26,11 +55,16 @@
         force: yes
 
     - name: Install dependencies
-      shell: npm install
-      args:
-        chdir: /home/ubuntu/app
+      npm:
+        path: /home/ubuntu/app
+        state: present
 
-    - name: Start the app in background
-      shell: nohup npm start > /dev/null 2>&1 &
+    - name: Install PM2 process manager globally
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Start the app with PM2
+      shell: pm2 start npm --name "react-app" -- start
       args:
         chdir: /home/ubuntu/app
