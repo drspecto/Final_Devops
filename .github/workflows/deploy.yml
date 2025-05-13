@@ -17,15 +17,21 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
         chmod 600 private_key.pem
 
-    - name: Run Ansible Playbook
+    - name: Install Ansible
       run: |
         sudo apt-get update
         sudo apt-get install -y ansible
 
+    - name: Create or append to ansible.cfg
+      run: |
+        echo "[defaults]" >> ansible.cfg
+        echo "host_key_checking = False" >> ansible.cfg
+
+    - name: Generate Inventory file
+      run: |
         echo "[web]" > inventory
         echo "${{ secrets.EC2_IP }}" >> inventory
 
-        echo "[defaults]" > ansible.cfg
-        echo "host_key_checking = False" >> ansible.cfg
-
+    - name: Run Ansible Playbook
+      run: |
         ansible-playbook -i inventory playbook.yml --private-key private_key.pem -u ec2-user
